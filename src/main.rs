@@ -1,11 +1,15 @@
 mod config;
-mod server;
 mod error;
+mod server;
 
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Mirage API — fast mock server for OpenAPI/YAML")]
+#[command(
+    author,
+    version,
+    about = "Mirage API — fast mock server for OpenAPI/YAML"
+)]
 struct Cli {
     /// Path to config file
     #[arg(short, long, default_value = "examples/simple.yaml")]
