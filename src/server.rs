@@ -40,8 +40,13 @@ async fn handle_request(State(state): State<AppState>, req: Request<Body>) -> im
     let method = req.method().clone();
     let path = req.uri().path().to_string();
 
-    // Look up PathItem by exact path
-    if let Some(path_item) = state.spec.paths.get(&path) {
+    // Find PathItem by path template, supporting /users/{id}
+    if let Some((_, path_item)) = state
+        .spec
+        .paths
+        .iter()
+        .find(|(template, _)| match_path(template, &path))
+    {
         if let Some(operation) = find_operation_for_method(path_item, &method) {
             if let Some((status, body, content_type)) = build_response_from_operation(operation) {
                 return build_response(status, body, content_type);
@@ -64,6 +69,39 @@ fn find_operation_for_method<'a>(
         Method::PATCH => path_item.patch.as_ref(),
         _ => None,
     }
+}
+
+fn match_path(template: &str, actual: &str) -> bool {
+    // Remove trailing / so that /users and /users/ are considered the same
+    let t = template.trim_end_matches('/');
+    let a = actual.trim_end_matches('/');
+
+    let t_parts: Vec<_> = t.split('/').filter(|s| !s.is_empty()).collect();
+    let a_parts: Vec<_> = a.split('/').filter(|s| !s.is_empty()).collect();
+
+    if t_parts.len() != a_parts.len() {
+        return false;
+    }
+
+    for (t_seg, a_seg) in t_parts.iter().zip(a_parts.iter()) {
+        if is_path_param(t_seg) {
+            // {id} matches any non-empty segment
+            if a_seg.is_empty() {
+                return false;
+            }
+            continue;
+        }
+
+        if t_seg != a_seg {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn is_path_param(seg: &str) -> bool {
+    seg.starts_with('{') && seg.ends_with('}') && seg.len() > 2
 }
 
 #[allow(clippy::collapsible_if)]

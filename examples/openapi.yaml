@@ -29,9 +29,10 @@ paths:
                   summary: Main example
                   value: "Plain text from OpenAPI mock (via examples)"
 
-  /user:
+  paths:
+  /users/{id}:
     get:
-      summary: Returns user by schema
+      summary: Get user by id
       responses:
         "200":
           description: OK
@@ -42,17 +43,5 @@ paths:
                 properties:
                   id:
                     type: string
-                    format: uuid
                   name:
                     type: string
-                  age:
-                    type: integer
-                  roles:
-                    type: array
-                    items:
-                      type: string
-                  settings:
-                    type: object
-                    properties:
-                      darkMode:
-                        type: boolean
