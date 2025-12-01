@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: Mirage API Example
+  version: 1.0.0
+
+paths:
+  /hello:
+    get:
+      summary: Returns a greeting
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              example:
+                message: "Hello from OpenAPI mock"
+                ok: true
+
+  /text:
+    get:
+      summary: Returns plain text
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              example: "Plain text from OpenAPI mock"
