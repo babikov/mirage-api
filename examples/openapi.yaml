@@ -45,3 +45,21 @@ paths:
                     type: string
                   name:
                     type: string
+
+  paths:
+  /login:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              x-mirage-example-param: variant
+              examples:
+                success:
+                  value:
+                    status: "ok"
+                error:
+                  value:
+                    status: "error"
+                    message: "Invalid credentials"

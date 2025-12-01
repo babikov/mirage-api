@@ -8,6 +8,7 @@ use axum::{
     routing::any,
 };
 use serde_json::Value;
+use std::collections::HashMap;
 use tokio::net::TcpListener;
 
 use crate::config::{MediaType, OpenApi, Operation, PathItem, Response, Schema};
@@ -39,6 +40,7 @@ pub async fn run(spec: OpenApi, addr: String) -> Result<(), Error> {
 async fn handle_request(State(state): State<AppState>, req: Request<Body>) -> impl IntoResponse {
     let method = req.method().clone();
     let path = req.uri().path().to_string();
+    let query_params = parse_query(req.uri().query());
 
     // Find PathItem by path template, supporting /users/{id}
     if let Some((_, path_item)) = state
@@ -48,13 +50,34 @@ async fn handle_request(State(state): State<AppState>, req: Request<Body>) -> im
         .find(|(template, _)| match_path(template, &path))
     {
         if let Some(operation) = find_operation_for_method(path_item, &method) {
-            if let Some((status, body, content_type)) = build_response_from_operation(operation) {
+            if let Some((status, body, content_type)) =
+                build_response_from_operation(operation, &query_params)
+            {
                 return build_response(status, body, content_type);
             }
         }
     }
 
     build_not_found_response(method, path)
+}
+
+/// Very simple query parser: ?a=1&b=2 → HashMap { "a": "1", "b": "2" }
+fn parse_query(query: Option<&str>) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+
+    if let Some(q) = query {
+        for pair in q.split('&') {
+            if pair.is_empty() {
+                continue;
+            }
+            let mut iter = pair.splitn(2, '=');
+            let key = iter.next().unwrap_or_default();
+            let value = iter.next().unwrap_or_default();
+            map.insert(key.to_string(), value.to_string());
+        }
+    }
+
+    map
 }
 
 fn find_operation_for_method<'a>(
@@ -105,14 +128,17 @@ fn is_path_param(seg: &str) -> bool {
 }
 
 #[allow(clippy::collapsible_if)]
-fn build_response_from_operation(operation: &Operation) -> Option<(u16, Option<BodyKind>, String)> {
+fn build_response_from_operation(
+    operation: &Operation,
+    query: &HashMap<String, String>,
+) -> Option<(u16, Option<BodyKind>, String)> {
     if operation.responses.is_empty() {
         return None;
     }
 
     // 1) Try to use 200
     if let Some(resp) = operation.responses.get("200") {
-        if let Some(res) = build_body_from_response(resp) {
+        if let Some(res) = build_body_from_response(resp, query) {
             return Some((200, res.0, res.1));
         }
     }
@@ -120,7 +146,7 @@ fn build_response_from_operation(operation: &Operation) -> Option<(u16, Option<B
     // 2) Otherwise take the first available status code
     if let Some((status_code, resp)) = operation.responses.iter().next() {
         let status = status_code.parse::<u16>().unwrap_or(200);
-        if let Some(res) = build_body_from_response(resp) {
+        if let Some(res) = build_body_from_response(resp, query) {
             return Some((status, res.0, res.1));
         }
     }
@@ -134,17 +160,37 @@ enum BodyKind {
     Text(String),
 }
 
-fn pick_example(mt: &MediaType) -> Option<Value> {
+/// Главная логика выбора примера:
+/// 1) Если в media-type есть x-mirage-example-param: param,
+///    и в query есть ?param=key, и есть examples.key → взять его.
+/// 2) Иначе example.
+/// 3) Иначе первый из examples.
+/// 4) Иначе None → дальше разрулит schema.
+fn pick_example(mt: &MediaType, query: &HashMap<String, String>) -> Option<Value> {
+    // 1) x-mirage-example-param
+    if let Some(param) = &mt.example_param {
+        if let Some(key) = query.get(param) {
+            if let Some(ex) = mt.examples.get(key) {
+                if let Some(v) = &ex.value {
+                    return Some(v.clone());
+                }
+            }
+        }
+    }
+
+    // 2) Single example
     if let Some(ex) = &mt.example {
         return Some(ex.clone());
     }
 
+    // 3) First from examples
     for ex in mt.examples.values() {
         if let Some(value) = &ex.value {
             return Some(value.clone());
         }
     }
 
+    // 4) No examples
     None
 }
 
@@ -195,15 +241,18 @@ fn generate_from_schema(schema: &Schema) -> Value {
 }
 
 #[allow(clippy::collapsible_if)]
-fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String)> {
+fn build_body_from_response(
+    resp: &Response,
+    query: &HashMap<String, String>,
+) -> Option<(Option<BodyKind>, String)> {
     if resp.content.is_empty() {
         return Some((None, "text/plain".to_string()));
     }
 
     // 1) First try JSON: example / examples / schema
     if let Some(mt) = resp.content.get("application/json") {
-        // example / examples
-        if let Some(example) = pick_example(mt) {
+        // example / examples (+ x-mirage-example-param)
+        if let Some(example) = pick_example(mt, query) {
             return Some((
                 Some(BodyKind::Json(example)),
                 "application/json".to_string(),
@@ -219,8 +268,8 @@ fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String
 
     // 2) Then any other content-type
     if let Some((content_type, mt)) = resp.content.iter().next() {
-        // example / examples
-        if let Some(example) = pick_example(mt) {
+        // example / examples (+ x-mirage-example-param)
+        if let Some(example) = pick_example(mt, query) {
             if let Some(s) = example.as_str() {
                 return Some((Some(BodyKind::Text(s.to_string())), content_type.clone()));
             } else {

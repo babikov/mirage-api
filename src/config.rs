@@ -69,6 +69,10 @@ pub struct MediaType {
     /// JSON schema: `schema: { ... }`
     #[serde(default)]
     pub schema: Option<Schema>,
+
+    #[serde(rename = "x-mirage-example-param")]
+    #[serde(default)]
+    pub example_param: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
