@@ -160,21 +160,24 @@ enum BodyKind {
     Text(String),
 }
 
-/// Главная логика выбора примера:
-/// 1) Если в media-type есть x-mirage-example-param: param,
-///    и в query есть ?param=key, и есть examples.key → взять его.
-/// 2) Иначе example.
-/// 3) Иначе первый из examples.
-/// 4) Иначе None → дальше разрулит schema.
-fn pick_example(mt: &MediaType, query: &HashMap<String, String>) -> Option<Value> {
+/// Main logic for picking an example:
+/// 1) If media-type has x-mirage-example-param: param,
+///    and query has ?param=key and there is examples.key → use it.
+/// 2) Otherwise use example.
+/// 3) Otherwise the first item from examples.
+/// 4) Otherwise None → then schema will be used.
+fn pick_example(
+    mt: &MediaType,
+    query: &HashMap<String, String>,
+) -> Option<Value> {
     // 1) x-mirage-example-param
     if let Some(param) = &mt.example_param {
-        if let Some(key) = query.get(param) {
-            if let Some(ex) = mt.examples.get(key) {
-                if let Some(v) = &ex.value {
-                    return Some(v.clone());
-                }
-            }
+        if let Some(v) = query
+            .get(param)
+            .and_then(|key| mt.examples.get(key))
+            .and_then(|ex| ex.value.as_ref())
+        {
+            return Some(v.clone());
         }
     }
 
