@@ -8,10 +8,10 @@ examples, schemas, and automatic mock generation.
 
 Perfect for:
 
--   Frontend developers\
--   Mobile apps\
--   QA teams\
--   Integration testing\
+-   Frontend developers
+-   Mobile apps
+-   QA teams
+-   Integration testing
 -   Local development without a backend
 
 Just point it to your `openapi.yaml` --- Mirage does the rest.
@@ -20,7 +20,7 @@ Just point it to your `openapi.yaml` --- Mirage does the rest.
 
 ## 🚀 Features
 
--   🔥 Instant mocks from OpenAPI\
+-   🔥 Instant mocks from OpenAPI
 
 -   🎯 Example selection via query parameter
 
@@ -30,13 +30,13 @@ Just point it to your `openapi.yaml` --- Mirage does the rest.
 
     → `/login?variant=success`
 
--   ✨ Support for `example:` and `examples:`\
+-   ✨ Support for `example:` and `examples:`
 
--   🧬 Schema-based mock generation\
+-   🧬 Schema-based mock generation
 
--   🛣 Path templates like `/users/{id}`\
+-   🛣 Path templates like `/users/{id}`
 
--   ⚡ Built with Rust + Axum\
+-   ⚡ Built with Rust + Axum
 
 -   🧵 Zero configuration
 
@@ -129,13 +129,13 @@ Generated output:
 
 Supports:
 
--   string\
--   integer\
--   number\
--   boolean\
--   array\
--   object\
--   enum\
+-   string
+-   integer
+-   number
+-   boolean
+-   array
+-   object
+-   enum
 -   formats (`date-time`, `uuid`)
 
 ------------------------------------------------------------------------
@@ -158,10 +158,10 @@ Matches:
 
 ## 💡 Why Mirage API?
 
--   Minimalistic, predictable\
--   No UI, no complexity\
--   Rust performance\
--   Perfect for rapid prototyping\
+-   Minimalistic, predictable
+-   No UI, no complexity
+-   Rust performance
+-   Perfect for rapid prototyping
 -   100% OpenAPI-compatible
 
 ------------------------------------------------------------------------
@@ -169,18 +169,18 @@ Matches:
 ## 📍 Roadmap
 
 -   [ ] Response delays (`x-mirage-delay-ms`)
--   [ ] Flaky responses\
--   [ ] Random example mode\
--   [ ] Docker image\
--   [ ] Homebrew tap\
--   [ ] CLI generator (`mirage-api init`)\
+-   [ ] Flaky responses
+-   [ ] Random example mode
+-   [ ] Docker image
+-   [ ] Homebrew tap
+-   [ ] CLI generator (`mirage-api init`)
 -   [ ] TypeScript type generator
 
 ------------------------------------------------------------------------
 
 ## 🤝 Contributing
 
-PRs are welcome.\
+PRs are welcome.
 Please keep the code clean and idiomatic.
 
 ------------------------------------------------------------------------
