@@ -65,6 +65,10 @@ pub struct MediaType {
     /// Множественные примеры: `examples: { name: { value: ... } }`
     #[serde(default)]
     pub examples: HashMap<String, Example>,
+
+    /// JSON-схема: `schema: { ... }`
+    #[serde(default)]
+    pub schema: Option<Schema>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -75,6 +79,31 @@ pub struct Example {
 
     #[serde(default)]
     pub value: Option<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
+pub struct Schema {
+    /// Тип: "object", "array", "string", "number", "integer", "boolean"
+    #[serde(rename = "type")]
+    pub ty: Option<String>,
+
+    /// Для объектов: свойства
+    #[serde(default)]
+    pub properties: HashMap<String, Schema>,
+
+    /// Для массивов: схема элемента
+    #[serde(default)]
+    pub items: Option<Box<Schema>>,
+
+    /// Enum-значения: `enum: [...]`
+    #[serde(rename = "enum")]
+    #[serde(default)]
+    pub enum_values: Vec<Value>,
+
+    /// Формат: "date-time", "uuid" и т.д. (можно использовать для более красивых моков)
+    #[serde(default)]
+    pub format: Option<String>,
 }
 
 pub fn load(path: &str) -> Result<OpenApi, Error> {

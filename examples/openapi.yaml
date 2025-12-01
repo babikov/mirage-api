@@ -28,6 +28,31 @@ paths:
                 first:
                   summary: Main example
                   value: "Plain text from OpenAPI mock (via examples)"
-                alt:
-                  summary: Another example (игнорируем)
-                  value: "Alt text"
+
+  /user:
+    get:
+      summary: Returns user by schema
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  age:
+                    type: integer
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                  settings:
+                    type: object
+                    properties:
+                      darkMode:
+                        type: boolean

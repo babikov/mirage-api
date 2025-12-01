@@ -10,7 +10,7 @@ use axum::{
 use serde_json::Value;
 use tokio::net::TcpListener;
 
-use crate::config::{MediaType, OpenApi, Operation, PathItem, Response};
+use crate::config::{MediaType, OpenApi, Operation, PathItem, Response, Schema};
 use crate::error::Error;
 
 #[derive(Clone)]
@@ -110,34 +110,87 @@ fn pick_example(mt: &MediaType) -> Option<Value> {
     None
 }
 
+fn generate_from_schema(schema: &Schema) -> Value {
+    // 1) Если есть enum — берём первое значение
+    if !schema.enum_values.is_empty() {
+        return schema.enum_values[0].clone();
+    }
+
+    let ty = schema.ty.as_deref().unwrap_or("object");
+
+    match ty {
+        "string" => {
+            if let Some(format) = &schema.format {
+                match format.as_str() {
+                    "date-time" => Value::String("2025-01-01T00:00:00Z".to_string()),
+                    "date" => Value::String("2025-01-01".to_string()),
+                    "uuid" => Value::String("00000000-0000-0000-0000-000000000000".to_string()),
+                    _ => Value::String(format!("string({})", format)),
+                }
+            } else {
+                Value::String("string".to_string())
+            }
+        }
+        "number" => Value::Number(serde_json::Number::from_f64(123.45).unwrap()),
+        "integer" => Value::Number(serde_json::Number::from(123)),
+        "boolean" => Value::Bool(true),
+        "array" => {
+            if let Some(item_schema) = &schema.items {
+                Value::Array(vec![generate_from_schema(item_schema)])
+            } else {
+                Value::Array(vec![])
+            }
+        }
+        "object" | _ => {
+            // Если есть properties — собираем объект
+            if !schema.properties.is_empty() {
+                let mut map = serde_json::Map::new();
+                for (name, prop_schema) in &schema.properties {
+                    map.insert(name.clone(), generate_from_schema(prop_schema));
+                }
+                Value::Object(map)
+            } else {
+                // Пустой объект
+                Value::Object(serde_json::Map::new())
+            }
+        }
+    }
+}
+
 #[allow(clippy::collapsible_if)]
 fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String)> {
     if resp.content.is_empty() {
         return Some((None, "text/plain".to_string()));
     }
 
-    // First try to use JSON
+    // 1) Пытаемся сначала JSON: example / examples / schema
     if let Some(mt) = resp.content.get("application/json") {
+        // example / examples
         if let Some(example) = pick_example(mt) {
             return Some((
                 Some(BodyKind::Json(example)),
                 "application/json".to_string(),
             ));
         }
+
+        // schema без example/examples → генерируем мок
+        if let Some(schema) = &mt.schema {
+            let value = generate_from_schema(schema);
+            return Some((Some(BodyKind::Json(value)), "application/json".to_string()));
+        }
     }
 
-    // Then fall back to any other content-type
+    // 2) Потом любую другую content-type
     if let Some((content_type, mt)) = resp.content.iter().next() {
+        // example / examples
         if let Some(example) = pick_example(mt) {
-            // If example is a string → treat as text
             if let Some(s) = example.as_str() {
                 return Some((Some(BodyKind::Text(s.to_string())), content_type.clone()));
             } else {
-                // иначе — json (или вообще произвольный объект)
                 return Some((Some(BodyKind::Json(example)), content_type.clone()));
             }
         } else {
-            // No example → empty body
+            // пока schema для не-JSON типов не трогаем, отдаём пустое тело
             return Some((None, content_type.clone()));
         }
     }
