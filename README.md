@@ -22,6 +22,6 @@ latency, flaky responses and templated bodies.
 
 cargo run -- --config examples/simple.yaml
 
-![Build](https://img.shields.io/github/actions/workflow/status/you/mirage-api/ci.yml)
+![Build](https://img.shields.io/github/actions/workflow/status/babikov/mirage-api/ci.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Stars](https://img.shields.io/github/stars/you/mirage-api)
+![Stars](https://img.shields.io/github/stars/babikov/mirage-api)
