@@ -35,6 +35,7 @@ pub async fn run(spec: OpenApi, addr: String) -> Result<(), Error> {
     Ok(())
 }
 
+#[allow(clippy::collapsible_if)]
 async fn handle_request(State(state): State<AppState>, req: Request<Body>) -> impl IntoResponse {
     let method = req.method().clone();
     let path = req.uri().path().to_string();
@@ -65,6 +66,7 @@ fn find_operation_for_method<'a>(
     }
 }
 
+#[allow(clippy::collapsible_if)]
 fn build_response_from_operation(operation: &Operation) -> Option<(u16, Option<BodyKind>, String)> {
     if operation.responses.is_empty() {
         return None;
@@ -94,6 +96,7 @@ enum BodyKind {
     Text(String),
 }
 
+#[allow(clippy::collapsible_if)]
 fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String)> {
     if resp.content.is_empty() {
         return Some((None, "text/plain".to_string()));
