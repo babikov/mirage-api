@@ -167,15 +167,15 @@ enum BodyKind {
 /// 3) Otherwise the first item from examples.
 /// 4) Otherwise None → then schema will be used.
 fn pick_example(mt: &MediaType, query: &HashMap<String, String>) -> Option<Value> {
-    // 1) x-mirage-example-param
-    if let Some(param) = &mt.example_param {
-        if let Some(v) = query
-            .get(param)
-            .and_then(|key| mt.examples.get(key))
-            .and_then(|ex| ex.value.as_ref())
-        {
-            return Some(v.clone());
-        }
+    // 1) x-mirage-example-param (без вложенных if)
+    if let Some(v) = mt
+        .example_param
+        .as_ref()
+        .and_then(|param| query.get(param))
+        .and_then(|key| mt.examples.get(key))
+        .and_then(|ex| ex.value.as_ref())
+    {
+        return Some(v.clone());
     }
 
     // 2) Single example
