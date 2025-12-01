@@ -24,4 +24,10 @@ paths:
           description: OK
           content:
             text/plain:
-              example: "Plain text from OpenAPI mock"
+              examples:
+                first:
+                  summary: Main example
+                  value: "Plain text from OpenAPI mock (via examples)"
+                alt:
+                  summary: Another example (игнорируем)
+                  value: "Alt text"

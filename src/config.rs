@@ -58,8 +58,23 @@ pub struct Response {
 }
 #[derive(Debug, Clone, Deserialize)]
 pub struct MediaType {
+    /// Один пример: `example: {...}`
     #[serde(default)]
     pub example: Option<Value>,
+
+    /// Множественные примеры: `examples: { name: { value: ... } }`
+    #[serde(default)]
+    pub examples: HashMap<String, Example>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
+pub struct Example {
+    #[serde(default)]
+    pub summary: Option<String>,
+
+    #[serde(default)]
+    pub value: Option<Value>,
 }
 
 pub fn load(path: &str) -> Result<OpenApi, Error> {

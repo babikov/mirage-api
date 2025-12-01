@@ -10,7 +10,7 @@ use axum::{
 use serde_json::Value;
 use tokio::net::TcpListener;
 
-use crate::config::{OpenApi, Operation, PathItem, Response};
+use crate::config::{MediaType, OpenApi, Operation, PathItem, Response};
 use crate::error::Error;
 
 #[derive(Clone)]
@@ -96,6 +96,20 @@ enum BodyKind {
     Text(String),
 }
 
+fn pick_example(mt: &MediaType) -> Option<Value> {
+    if let Some(ex) = &mt.example {
+        return Some(ex.clone());
+    }
+
+    for ex in mt.examples.values() {
+        if let Some(value) = &ex.value {
+            return Some(value.clone());
+        }
+    }
+
+    None
+}
+
 #[allow(clippy::collapsible_if)]
 fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String)> {
     if resp.content.is_empty() {
@@ -104,9 +118,9 @@ fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String
 
     // First try to use JSON
     if let Some(mt) = resp.content.get("application/json") {
-        if let Some(example) = &mt.example {
+        if let Some(example) = pick_example(mt) {
             return Some((
-                Some(BodyKind::Json(example.clone())),
+                Some(BodyKind::Json(example)),
                 "application/json".to_string(),
             ));
         }
@@ -114,12 +128,13 @@ fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String
 
     // Then fall back to any other content-type
     if let Some((content_type, mt)) = resp.content.iter().next() {
-        if let Some(example) = &mt.example {
+        if let Some(example) = pick_example(mt) {
             // If example is a string → treat as text
             if let Some(s) = example.as_str() {
                 return Some((Some(BodyKind::Text(s.to_string())), content_type.clone()));
             } else {
-                return Some((Some(BodyKind::Json(example.clone())), content_type.clone()));
+                // иначе — json (или вообще произвольный объект)
+                return Some((Some(BodyKind::Json(example)), content_type.clone()));
             }
         } else {
             // No example → empty body
