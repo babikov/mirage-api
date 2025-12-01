@@ -58,15 +58,15 @@ pub struct Response {
 }
 #[derive(Debug, Clone, Deserialize)]
 pub struct MediaType {
-    /// Один пример: `example: {...}`
+    /// Single example: `example: {...}`
     #[serde(default)]
     pub example: Option<Value>,
 
-    /// Множественные примеры: `examples: { name: { value: ... } }`
+    /// Multiple examples: `examples: { name: { value: ... } }`
     #[serde(default)]
     pub examples: HashMap<String, Example>,
 
-    /// JSON-схема: `schema: { ... }`
+    /// JSON schema: `schema: { ... }`
     #[serde(default)]
     pub schema: Option<Schema>,
 }
@@ -84,24 +84,24 @@ pub struct Example {
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
 pub struct Schema {
-    /// Тип: "object", "array", "string", "number", "integer", "boolean"
+    /// Type: "object", "array", "string", "number", "integer", "boolean"
     #[serde(rename = "type")]
     pub ty: Option<String>,
 
-    /// Для объектов: свойства
+    /// For objects: properties
     #[serde(default)]
     pub properties: HashMap<String, Schema>,
 
-    /// Для массивов: схема элемента
+    /// For arrays: item schema
     #[serde(default)]
     pub items: Option<Box<Schema>>,
 
-    /// Enum-значения: `enum: [...]`
+    /// Enum values: `enum: [...]`
     #[serde(rename = "enum")]
     #[serde(default)]
     pub enum_values: Vec<Value>,
 
-    /// Формат: "date-time", "uuid" и т.д. (можно использовать для более красивых моков)
+    /// Format: "date-time", "uuid", etc. (used to generate nicer mocks)
     #[serde(default)]
     pub format: Option<String>,
 }

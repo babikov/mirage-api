@@ -111,7 +111,7 @@ fn pick_example(mt: &MediaType) -> Option<Value> {
 }
 
 fn generate_from_schema(schema: &Schema) -> Value {
-    // 1) Если есть enum — берём первое значение
+    // 1) If there is an enum — take the first value
     if !schema.enum_values.is_empty() {
         return schema.enum_values[0].clone();
     }
@@ -141,8 +141,7 @@ fn generate_from_schema(schema: &Schema) -> Value {
                 Value::Array(vec![])
             }
         }
-        "object" | _ => {
-            // Если есть properties — собираем объект
+        "object" => {
             if !schema.properties.is_empty() {
                 let mut map = serde_json::Map::new();
                 for (name, prop_schema) in &schema.properties {
@@ -150,10 +149,10 @@ fn generate_from_schema(schema: &Schema) -> Value {
                 }
                 Value::Object(map)
             } else {
-                // Пустой объект
                 Value::Object(serde_json::Map::new())
             }
         }
+        _ => Value::Object(serde_json::Map::new()),
     }
 }
 
@@ -163,7 +162,7 @@ fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String
         return Some((None, "text/plain".to_string()));
     }
 
-    // 1) Пытаемся сначала JSON: example / examples / schema
+    // 1) First try JSON: example / examples / schema
     if let Some(mt) = resp.content.get("application/json") {
         // example / examples
         if let Some(example) = pick_example(mt) {
@@ -173,14 +172,14 @@ fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String
             ));
         }
 
-        // schema без example/examples → генерируем мок
+        // schema without example/examples → generate a mock
         if let Some(schema) = &mt.schema {
             let value = generate_from_schema(schema);
             return Some((Some(BodyKind::Json(value)), "application/json".to_string()));
         }
     }
 
-    // 2) Потом любую другую content-type
+    // 2) Then any other content-type
     if let Some((content_type, mt)) = resp.content.iter().next() {
         // example / examples
         if let Some(example) = pick_example(mt) {
@@ -190,7 +189,7 @@ fn build_body_from_response(resp: &Response) -> Option<(Option<BodyKind>, String
                 return Some((Some(BodyKind::Json(example)), content_type.clone()));
             }
         } else {
-            // пока schema для не-JSON типов не трогаем, отдаём пустое тело
+            // For now we ignore schema for non-JSON types and return an empty body
             return Some((None, content_type.clone()));
         }
     }
