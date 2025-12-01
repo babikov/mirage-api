@@ -4,6 +4,7 @@ mod server;
 
 use clap::Parser;
 
+/// Mirage API - fast mock server for YAML/OpenAPI
 #[derive(Parser, Debug)]
 #[command(
     author,
@@ -22,8 +23,6 @@ async fn main() -> Result<(), error::Error> {
 
     println!("Mirage API starting with config: {}", cli.config);
 
-    // TODO: implement loading config + running server
-    // For now just parse and print config
     let cfg = config::load(&cli.config)?;
     println!("Config loaded: {:?}", cfg);
 
